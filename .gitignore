@@ -11,7 +11,7 @@ dist/
 build/
 *.log
 
-# data & models (????)
+# data & models??????
 data/
 datasets/
 outputs/
@@ -31,4 +31,3 @@ node_modules/
 .DS_Store
 .idea/
 .vscode/
-

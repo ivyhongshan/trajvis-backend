@@ -1,23 +1,23 @@
-# Use a lightweight Python image
+# ??? Dockerfile ?????
 FROM python:3.9-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8080
+ENV PYTHONUNBUFFERED=1 \
+    PORT=8080 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the requirements and install dependencies
-COPY requirements.txt .
+# ????????
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code to the container
-COPY . .
+# ???? + ?? + ??
+COPY . .    # ???????????? COPY services/ data/ scripts/ main.py ?
 
-# Expose the app port
+# === ?????????????===
+RUN python scripts/offline_prepare.py
+
+# ?? gunicorn??????????
 EXPOSE 8080
-
-# Run the application using gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "600", "main:app"]
 

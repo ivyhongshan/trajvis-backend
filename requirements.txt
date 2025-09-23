@@ -1,0 +1,9 @@
+flask
+flask_restful
+flask_cors
+pandas
+scipy
+scikit-learn
+umap-learn
+simpleppt
+gunicorn==20.1.0

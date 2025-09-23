@@ -1,4 +1,4 @@
-import importlib
+# main.py
 from flask import Flask, Blueprint
 from flask_restful import Api
 from flask_cors import CORS
@@ -10,23 +10,33 @@ from resources.labtest import Labtest
 from resources.analysis import Analysis, AnalysisDist
 
 app = Flask(__name__)
-CORS(app)
-api_bp = Blueprint('api', __name__)
+
+# ??? /api/* ? CORS????????? origins ?????????
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# ???? /api ?? Blueprint ? url_prefix ?
+api_bp = Blueprint("api", __name__, url_prefix="/api")
 api = Api(api_bp)
 
-api.add_resource(Patient, '/api/patient/<int:id>')
-api.add_resource(AllPatient, '/api/patients')
-api.add_resource(AllIndicator, '/api/indicators')
-api.add_resource(Indicator, '/api/indicator/<att_name>')
-api.add_resource(Umap, '/api/umap')
-api.add_resource(Labtest, '/api/labtest/<int:id>')
-api.add_resource(PatProj, '/api/umap/<int:id>')
-api.add_resource(Analysis, '/api/analysis/<int:id>')
-api.add_resource(AnalysisDist, '/api/analysis/dist/<concept>')
-
+# ??????????? /api/ ??
+api.add_resource(Patient,      "/patient/<int:id>")
+api.add_resource(AllPatient,   "/patients")
+api.add_resource(AllIndicator, "/indicators")
+api.add_resource(Indicator,    "/indicator/<att_name>")
+api.add_resource(Umap,         "/umap")
+api.add_resource(Labtest,      "/labtest/<int:id>")
+api.add_resource(PatProj,      "/umap/<int:id>")
+api.add_resource(Analysis,     "/analysis/<int:id>")
+api.add_resource(AnalysisDist, "/analysis/dist/<concept>")
 
 app.register_blueprint(api_bp)
 
-if __name__ == '__main__':
-    app.run()
-    #app.run(host='0.0.0.0', port=5002, debug=False)
+# ????
+@app.get("/health")
+def health():
+    return "ok", 200
+
+if __name__ == "__main__":
+    # ?????Cloud Run ?? gunicorn ????????
+    app.run(host="0.0.0.0", port=8080, debug=False)
+

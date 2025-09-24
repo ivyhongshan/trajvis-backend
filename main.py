@@ -30,7 +30,9 @@ api.add_resource(Analysis,     "/analysis/<int:id>")
 api.add_resource(AnalysisDist, "/analysis/dist/<concept>")
 
 app.register_blueprint(api_bp)
-
+@app.get("/__routes__")
+def routes():
+    return {"routes": sorted([str(r) for r in app.url_map.iter_rules()])}
 # ????
 @app.get("/health")
 def health():

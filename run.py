@@ -9,6 +9,27 @@ from resources.indicator import Indicator, AllIndicator
 from resources.umap import Umap, PatProj
 from resources.labtest import Labtest
 from resources.analysis import Analysis, AnalysisDist
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+
+
+try:
+    import numba
+    logging.info("NUMBA get_num_threads=%s", numba.get_num_threads())
+except Exception as e:
+    logging.info("NUMBA not available: %s", e)
+
+logging.info(
+    "THREADS OMP=%s OPENBLAS=%s MKL=%s NUMEXPR=%s",
+    os.getenv("OMP_NUM_THREADS"),
+    os.getenv("OPENBLAS_NUM_THREADS"),
+    os.getenv("MKL_NUM_THREADS"),
+    os.getenv("NUMEXPR_MAX_THREADS"),
+)
 
 app = Flask(__name__)
 

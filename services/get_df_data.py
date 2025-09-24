@@ -2,11 +2,12 @@
 import pandas as pd
 import datetime
 import random
+import os
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
 
-DATA_DIR = Path("/app/data")
-
+#DATA_DIR = Path("/app/data")
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 # ????
 _ckd_data_df = None
 _ckd_crf_demo = None
@@ -84,10 +85,12 @@ def get_profile_date(pat_id):
     return [birth_day, last_visit_res]
     
 def get_df_concept(att_name):
-    return ckd_data_df[ckd_data_df['concept.cd'] == att_name]['nval.num']
+    df = load_ckd_data_df()
+    return df[df['concept.cd'] == att_name]['nval.num']
 
 def get_df_all_concept():
-    return list(ckd_data_df['concept.cd'].unique())
+    df = load_ckd_data_df()
+    return df['concept.cd'].unique().tolist()
 
 # --- Normal range dict (unchanged) ---
 normal_range_dict = {

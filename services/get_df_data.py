@@ -5,7 +5,7 @@ import random
 import os
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
-
+import numpy as np
 #DATA_DIR = Path("/app/data")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 # ????
@@ -94,7 +94,13 @@ def get_df_concept(att_name):
 def get_df_all_concept():
     df = load_ckd_data_df()
     return df['concept.cd'].unique().tolist()
-
+    
+def get_Umap_color(pat_id):
+    df = get_pat_records(pat_id)
+    if "EGFR" in df["concept.cd"].values:
+        return df[df["concept.cd"] == "EGFR"]["nval.num"].tolist()
+    else:
+        return df["age"].tolist()
 # --- Normal range dict (unchanged) ---
 normal_range_dict = {
     'EGFR':[60, 200],

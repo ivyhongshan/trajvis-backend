@@ -1,4 +1,4 @@
-FROM gcr.io/google-appengine/python:2023
+FROM python:3.11-slim
 
 WORKDIR /app
 

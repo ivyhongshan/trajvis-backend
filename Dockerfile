@@ -1,23 +1,25 @@
-# ??? Dockerfile ?????
-FROM python:3.9-slim
-
-ENV PYTHONUNBUFFERED=1 \
-    PORT=8080 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# ????????
-COPY requirements.txt ./
+# ??????????
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential && rm -rf /var/lib/apt/lists/*
+
+# ????
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ???? + ?? + ??
-COPY . .    # ???????????? COPY services/ data/ scripts/ main.py ?
+# ?????????????????
+COPY main.py config.py run.py app.yaml __init__.py ./
+COPY resources/   resources/
+COPY services/    services/
+COPY templates/   templates/
+COPY scripts/     scripts/
 
-# === ?????????????===
-RUN python scripts/offline_prepare.py
+# Cloud Run ??
+ENV PORT=8080
 
-# ?? gunicorn??????????
-EXPOSE 8080
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "600", "main:app"]
+# ???gunicorn ?? main:app
+CMD ["gunicorn","-b","0.0.0.0:8080","main:app"]
 

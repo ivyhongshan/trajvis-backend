@@ -1,17 +1,15 @@
-# services/get_umap.py
 import logging
 from functools import lru_cache
 from pathlib import Path
-import os
 
 import numpy as np
 import pandas as pd
-from joblib import load, dump
-import umap.umap_ as umap
+from joblib import load
+import umap.umap_ as _umap_unpickle  # ? joblib ?????????
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-ARTIFACT_DIR = Path(__file__).resolve().parent.parent / "artifacts"
-ARTIFACT_DIR.mkdir(exist_ok=True)
+# Cloud Run ? gs://trajvis-data-20250923/data ?? /app/data????
+DATA_DIR = Path("/app/data")
+ARTIFACT_DIR = DATA_DIR / "artifacts"
 
 greenline = [26,22,83,88,46,51,24,65,4,16,89,30,32,13,78,18,1,64,97,69,33,60,28,3,20,74,62,91,66,94,75,44,61,54]
 blueline  = [26,22,83,88,46,51,24,65,4,16,89,30,32,13,78,18,1,64,97,69,33,0,99,58,29,47,82,67,14]

@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+FROM us-docker.pkg.dev/google-containers/library/python:3.11-slim
+
 
 WORKDIR /app
 

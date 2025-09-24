@@ -14,9 +14,12 @@ _ckd_crf_demo = None
 _features_all_csn = None
 _acr_df_pats = None
 
+
+
 def load_ckd_data_df():
     global _ckd_data_df
     if _ckd_data_df is None:
+        print("Loading ckd_emr_data.csv ...")   # debug log
         _ckd_data_df = pd.read_csv(DATA_DIR / "ckd_emr_data.csv", skipinitialspace=True)
     return _ckd_data_df
 

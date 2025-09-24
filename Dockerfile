@@ -21,5 +21,6 @@ COPY scripts/     scripts/
 ENV PORT=8080
 
 # ???gunicorn ?? main:app
-CMD ["gunicorn","-b","0.0.0.0:8080","main:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8080", "main:app"]
+
 

@@ -1,36 +1,57 @@
+# services/get_umap.py
 import logging
+import os
 from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from joblib import load
-import umap.umap_ as _umap_unpickle  # ? joblib ?????????
+from joblib import dump, load
+import umap
 
-# Cloud Run ? gs://trajvis-data-20250923/data ?? /app/data????
-DATA_DIR = Path("/app/data")
+# Data ??????? & Cloud Run?
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 ARTIFACT_DIR = DATA_DIR / "artifacts"
 
+# --- fixed trajectory lines ---
 greenline = [26,22,83,88,46,51,24,65,4,16,89,30,32,13,78,18,1,64,97,69,33,60,28,3,20,74,62,91,66,94,75,44,61,54]
 blueline  = [26,22,83,88,46,51,24,65,4,16,89,30,32,13,78,18,1,64,97,69,33,0,99,58,29,47,82,67,14]
 orangeline= [26,22,83,88,46,51,24,65,4,16,49,85,72,34,25,10,73,5,59]
 
-# ???????????????
+# --- pre-saved smoothed trajectories ---
+# (???????? green_traj_smooth / blue_traj_smooth / orange_traj_smooth)
+orange_traj_smooth = [[4.99, -1.67],[5.26, -1.52],[5.63, -1.31],[5.96, -1.12],[6.27, -0.93],
+ [6.36, -0.36],[6.13, -0.02],[6.02, 0.37],[6.04, 0.99],[5.53, 1.41],[5.33, 1.93],
+ [5.20, 2.37],[4.84, 2.36]]
 
+green_traj_smooth = [[4.99, -1.67],[5.26, -1.52],[5.63, -1.31],[5.96, -1.12],[6.27, -0.93],
+ [6.36, -0.36],[6.13, -0.02],[6.02, 0.37],[6.04, 0.99],[6.59, 1.36],[7.13, 1.68],
+ [7.37, 1.02],[7.58, 0.43],[8.01, 0.56],[8.50, 0.71],[8.87, 1.29],[8.66, 2.05],
+ [8.68, 2.62],[8.92, 2.97],[9.30, 3.21],[9.57, 3.53],[9.58, 4.02],[8.96, 4.89],
+ [8.02, 4.77],[7.45, 4.78]]
+
+blue_traj_smooth = [[4.99, -1.67],[5.26, -1.52],[5.63, -1.31],[5.96, -1.12],[6.27, -0.93],
+ [6.36, -0.36],[6.13, -0.02],[6.02, 0.37],[6.04, 0.99],[6.59, 1.36],[7.13, 1.68],
+ [7.37, 1.02],[7.58, 0.43],[8.01, 0.56],[8.50, 0.71],[8.87, 1.29],[9.54, 0.97],
+ [10.08, 0.71],[10.57, 0.48],[11.00, 0.32],[11.41, 0.55],[11.59, 0.78],[11.64, 0.91]]
+
+# --- Ensure artifacts exist ---
 def _ensure_artifacts():
-    """? artifacts ??????????????????????????????"""
-    need_fit = not (ARTIFACT_DIR / "umap_model.joblib").exists()
-    need_embed = not (ARTIFACT_DIR / "embedding.npy").exists()
-    if need_fit or need_embed:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    umap_model = ARTIFACT_DIR / "umap_model.joblib"
+    embed_file = ARTIFACT_DIR / "embedding.npy"
+
+    if not umap_model.exists() or not embed_file.exists():
         logging.info("Artifacts missing; computing once...")
         output = np.load(DATA_DIR / "graphsage_output.npy")
         df = pd.DataFrame(output)
         trans = umap.UMAP(
             n_neighbors=15, min_dist=1e-10, n_components=2,
-            random_state=123, metric="euclidean", local_connectivity=1, verbose=1
+            random_state=123, metric="euclidean",
+            local_connectivity=1, verbose=1
         ).fit(df)
-        dump(trans, ARTIFACT_DIR / "umap_model.joblib")
-        np.save(ARTIFACT_DIR / "embedding.npy", trans.embedding_)
+        dump(trans, umap_model)
+        np.save(embed_file, trans.embedding_)
         logging.info("Artifacts created.")
 
 @lru_cache(maxsize=1)
@@ -40,15 +61,8 @@ def _state():
     st = {}
     st["trans"] = load(ARTIFACT_DIR / "umap_model.joblib")
     st["embedding"] = np.load(ARTIFACT_DIR / "embedding.npy")
-    # ?? runtime ?????? CSV????????????
     st["embeddings_all_id_df"] = pd.read_csv(DATA_DIR / "embeddings_all_id_cluster.csv")
     st["features_all_csn_df"]  = pd.read_csv(DATA_DIR / "features_all_csn_id.csv")
-    # ppt ????? get_ppt_trajectory??
-    ppt_edges = ARTIFACT_DIR / "ppt_edges.parquet"
-    st["ppt_edges_df"] = pd.read_parquet(ppt_edges) if ppt_edges.exists() else None
-    # pat_traj
-    pat_traj = ARTIFACT_DIR / "pat_traj.csv"
-    st["pat_traj_df"] = pd.read_csv(pat_traj) if pat_traj.exists() else None
     return st
 
 def warm():
@@ -58,12 +72,11 @@ def get_orginal_embed():
     return _state()["embedding"].tolist()
 
 def tranform_new_data(data):
-    trans = _state()["trans"]
-    return trans.transform(data)
+    return _state()["trans"].transform(data)
 
-def project_to_umap(id):
+def project_to_umap(pat_id):
     st = _state()
-    latent_df = st["embeddings_all_id_df"][st["embeddings_all_id_df"]["pat_id"] == id]
+    latent_df = st["embeddings_all_id_df"][st["embeddings_all_id_df"]["pat_id"] == pat_id]
     clean_latent_df = latent_df.iloc[:, 5:]
     return tranform_new_data(clean_latent_df)
 
@@ -80,14 +93,14 @@ def get_pat_age_egfr(pat_id):
     return ages, egfrs
 
 def get_ppt_trajectory():
-    st = _state()
-    df = st["ppt_edges_df"]
-    if df is None:
-        # ???? ppt_edges??????????
-        return pd.DataFrame(columns=["from","to"])
-    return df
+    # ????? simpleppt ????? runtime ????
+    return pd.DataFrame(columns=["from", "to"])
 
 def get_four_trajectory():
-    # ???????????
-    return [["green", green_traj_smooth], ["blue", blue_traj_smooth], ["orange", orange_traj_smooth]]
+    # ?? smooth ??
+    return [
+        ["green", green_traj_smooth],
+        ["blue",  blue_traj_smooth],
+        ["orange", orange_traj_smooth]
+    ]
 

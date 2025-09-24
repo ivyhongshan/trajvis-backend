@@ -129,4 +129,35 @@ def toIntegers(data):
 
 def range_list(a, b):
     return list(range(a, b+1))
+    
+    
+# --- UMAP color helpers ---
+_umap_colors = None
+
+def get_Umap_color():
+    """
+    Return two arrays: one for 'age' and one for 'EGFR'.
+    Each array?? = ?????????.
+    """
+    global _umap_colors
+    if _umap_colors is not None:
+        return _umap_colors
+
+    df = load_ckd_data_df()
+
+    # ?????? age / EGFR ???????????
+    age_map = df.groupby("pat.id")["age"].mean().to_dict()
+    egfr_map = (
+        df[df["concept.cd"] == "EGFR"]
+        .groupby("pat.id")["nval.num"]
+        .mean()
+        .to_dict()
+    )
+
+    ages = [age_map.get(pid, None) for pid in df["pat.id"].unique()]
+    egfrs = [egfr_map.get(pid, None) for pid in df["pat.id"].unique()]
+
+    _umap_colors = (ages, egfrs)
+    return _umap_colors
+
 

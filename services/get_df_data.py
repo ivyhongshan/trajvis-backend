@@ -82,7 +82,12 @@ def get_profile_date(pat_id):
     birth_day = (birth_day - datetime.timedelta(days=rand_days)).strftime("%Y-%m-%d")
 
     return [birth_day, last_visit_res]
+    
+def get_df_concept(att_name):
+    return ckd_data_df[ckd_data_df['concept.cd'] == att_name]['nval.num']
 
+def get_df_all_concept():
+    return list(ckd_data_df['concept.cd'].unique())
 
 # --- Normal range dict (unchanged) ---
 normal_range_dict = {

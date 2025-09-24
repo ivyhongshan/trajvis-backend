@@ -1,7 +1,8 @@
 import pandas as pd
 from pathlib import Path
 
-DATA_DIR = Path("/app/data")
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
+
 
 _pat_traj = None
 def load_pat_traj():

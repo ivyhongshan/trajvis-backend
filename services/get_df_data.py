@@ -20,6 +20,7 @@ def load_ckd_data_df():
     global _ckd_data_df
     if _ckd_data_df is None:
         print("Loading ckd_emr_data.csv ...")   # debug log
+        print("DEBUG: entering load_ckd_data_df", flush=True)
         _ckd_data_df = pd.read_csv(DATA_DIR / "ckd_emr_data.csv", skipinitialspace=True)
     return _ckd_data_df
 

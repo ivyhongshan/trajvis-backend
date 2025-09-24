@@ -6,7 +6,7 @@ import joblib
 # ----------------
 # ????
 # ----------------
-DATA_DIR = Path("/app/data")
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 ARTIFACT_DIR = DATA_DIR / "artifacts"
 
 # ----------------

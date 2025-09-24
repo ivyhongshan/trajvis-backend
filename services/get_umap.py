@@ -37,22 +37,11 @@ blue_traj_smooth = [[4.99, -1.67],[5.26, -1.52],[5.63, -1.31],[5.96, -1.12],[6.2
 
 # --- Ensure artifacts exist ---
 def _ensure_artifacts():
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    umap_model = ARTIFACT_DIR / "umap_model.joblib"
-    embed_file = ARTIFACT_DIR / "embedding.npy"
-
-    if not umap_model.exists() or not embed_file.exists():
-        logging.info("Artifacts missing; computing once...")
-        output = np.load(DATA_DIR / "graphsage_output.npy")
-        df = pd.DataFrame(output)
-        trans = umap.UMAP(
-            n_neighbors=15, min_dist=1e-10, n_components=2,
-            random_state=123, metric="euclidean",
-            local_connectivity=1, verbose=1
-        ).fit(df)
-        dump(trans, umap_model)
-        np.save(embed_file, trans.embedding_)
-        logging.info("Artifacts created.")
+    """?? artifacts ??????????"""
+    if not (ARTIFACT_DIR / "umap_model.joblib").exists():
+        raise FileNotFoundError("Missing umap_model.joblib in artifacts dir")
+    if not (ARTIFACT_DIR / "embedding.npy").exists():
+        raise FileNotFoundError("Missing embedding.npy in artifacts dir")
 
 @lru_cache(maxsize=1)
 def _state():

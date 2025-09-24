@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+FROM gcr.io/distroless/python3-debian11
+
 
 WORKDIR /app
 

@@ -65,4 +65,4 @@ def health():
 
 if __name__ == "__main__":
     # ??????Cloud Run ? gunicorn ??
-    app.run(host="0.0.0.0", port=8080, debug=False)s
+    app.run(host="0.0.0.0", port=8080, debug=False)

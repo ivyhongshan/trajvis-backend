@@ -1,5 +1,4 @@
-FROM us-docker.pkg.dev/google-containers/library/python:3.11-slim
-
+FROM gcr.io/google-appengine/python:2023
 
 WORKDIR /app
 

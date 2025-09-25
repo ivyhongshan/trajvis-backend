@@ -1,28 +1,27 @@
-FROM gcr.io/distroless/python3-debian11
+FROM python:3.11-slim
 
-
+# ??????
 WORKDIR /app
 
-# ??????????
+# ??????
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential && rm -rf /var/lib/apt/lists/*
+    build-essential gcc \
+ && rm -rf /var/lib/apt/lists/*
 
-# ????
-COPY requirements.txt .
+# ??? requirements.txt????? COPY ????? pip ???
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ?????????????????
-COPY main.py config.py run.py app.yaml __init__.py ./
+# ???????
+COPY main.py config.py run.py app.yaml __init__.py ./ 
 COPY resources/   resources/
 COPY services/    services/
 COPY templates/   templates/
 COPY scripts/     scripts/
 
-# Cloud Run ??
+# ?? Cloud Run ?????
 ENV PORT=8080
 
-# ???gunicorn ?? main:app
-
+# ?? Gunicorn ????
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "--timeout", "600", "main:app"]
-
 

@@ -162,3 +162,69 @@ def get_Umap_color():
     return _umap_colors
 
 
+# ---------------- LabTest view ----------------
+def getLabTestViewData(pat_id):
+    ages, pat_concepts = get_pat_age_concept_list(pat_id)
+    concepts = get_df_all_concept()
+    concept_age_val = get_pat_unique_concept(pat_id)
+    res = []
+    for concept_pair in concept_age_val:
+        concept_ind = concepts.index(concept_pair[0])
+        age_num_val_dict = {}
+        for age_val_pair in concept_pair[1]:
+            age = int(age_val_pair[0])
+            val = age_val_pair[1]
+            if age not in age_num_val_dict:
+                age_num_val_dict[age] = [1, val]
+            else:
+                pre = age_num_val_dict[age]
+                val_max = val if val > pre[1] else pre[1]
+                age_num_val_dict[age] = [pre[0] + 1, val_max]
+        for age in age_num_val_dict:
+            age_ind = ages.index(age)
+            res.append([age_ind, concept_ind, age_num_val_dict[age][0], age_num_val_dict[age][1]])
+    return res
+
+
+# ---------------- Hierarchical clustering ----------------
+def getHierarchicalClusterVec(pat_id):
+    ages, concepts = get_pat_age_concept_list(pat_id)
+    concept_age_val = get_pat_unique_concept(pat_id)
+    concept_vec_dict = {}
+    for concept_pair in concept_age_val:
+        age_num_val_dict = {}
+        for age_val_pair in concept_pair[1]:
+            age = int(age_val_pair[0])
+            if age not in age_num_val_dict:
+                age_num_val_dict[age] = [1]
+            else:
+                age_num_val_dict[age][0] += 1
+        res = []
+        for age_uni in ages:
+            res.append(1 if age_uni in age_num_val_dict else 0)
+        concept_vec_dict[concept_pair[0]] = res
+    return concept_vec_dict
+
+
+def getHierarchicalClusterInput(pat_id):
+    vect_dict = getHierarchicalClusterVec(pat_id)
+    return list(vect_dict.values())
+
+
+def getOrderofConcepts(pat_id):
+    matrix = getHierarchicalClusterInput(pat_id)
+    ages, concepts = get_pat_age_concept_list(pat_id)
+    concepts_all = get_df_all_concept()
+    if len(matrix) <= 1:
+        return concepts
+    model = AgglomerativeClustering(linkage="ward", distance_threshold=2, n_clusters=None)
+    labels = model.fit_predict(matrix)
+    key_tuples = [(c, l) for c, l in zip(concepts, labels)]
+    newlist = sorted(key_tuples, key=lambda x: x[1], reverse=True)
+    res = [i[0] for i in newlist]
+    for c in concepts_all:
+        if c not in res:
+            res.append(c)
+    return res
+
+

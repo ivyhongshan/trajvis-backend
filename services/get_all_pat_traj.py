@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-
+import os
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 
 

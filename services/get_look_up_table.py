@@ -1,8 +1,8 @@
 import pandas as pd
 from pathlib import Path
-
-DATA_DIR = Path("/app/data")
-
+import os
+# DATA_DIR = Path("/app/data")
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 _look_up_p = None
 
 def load_look_up_p():

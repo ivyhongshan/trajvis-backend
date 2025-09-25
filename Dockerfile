@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM us-central1-docker.pkg.dev/in-iusm-bhds-depot/hliu-trajvis/python:3.11-slim
 
 
 # ??????

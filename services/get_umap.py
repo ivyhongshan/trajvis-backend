@@ -9,16 +9,6 @@ import pandas as pd
 from joblib import dump, load
 import umap
 
-import time
-
-def timed(func):
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        print(f"TIMING: {func.__name__} took {time.time()-start:.2f}s", flush=True)
-        return result
-    return wrapper
-
 # Data ??????? & Cloud Run?
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 ARTIFACT_DIR = DATA_DIR / "artifacts"
@@ -67,7 +57,6 @@ def _state():
 def warm():
     _ = _state(); return True
 
-@timed
 def get_orginal_embed():
     return _state()["embedding"].tolist()
 

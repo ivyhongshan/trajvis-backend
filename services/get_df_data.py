@@ -7,15 +7,6 @@ from dateutil.relativedelta import relativedelta
 from pathlib import Path
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
-import time
-
-def timed(func):
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        print(f"TIMING: {func.__name__} took {time.time()-start:.2f}s", flush=True)
-        return result
-    return wrapper
 
 #DATA_DIR = Path("/app/data")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
@@ -26,7 +17,7 @@ _features_all_csn = None
 _acr_df_pats = None
 
 
-@timed
+
 def load_ckd_data_df():
     global _ckd_data_df
     if _ckd_data_df is None:
@@ -34,19 +25,19 @@ def load_ckd_data_df():
         print("DEBUG: entering load_ckd_data_df", flush=True)
         _ckd_data_df = pd.read_csv(DATA_DIR / "ckd_emr_data.csv", skipinitialspace=True)
     return _ckd_data_df
-@timed
+
 def load_ckd_crf_demo():
     global _ckd_crf_demo
     if _ckd_crf_demo is None:
         _ckd_crf_demo = pd.read_csv(DATA_DIR / "ckd_crf_demo.csv")
     return _ckd_crf_demo
-@timed
+
 def load_features_all_csn():
     global _features_all_csn
     if _features_all_csn is None:
         _features_all_csn = pd.read_csv(DATA_DIR / "features_all_csn_id.csv", skipinitialspace=True)
     return _features_all_csn
-@timed
+
 def load_acr_df_pats():
     global _acr_df_pats
     if _acr_df_pats is None:
@@ -54,20 +45,18 @@ def load_acr_df_pats():
     return _acr_df_pats
 
 # ---------------- ???? ----------------
-
-@timed
 def get_pat_records(pat_id):
     df = load_ckd_data_df()
     return df[df["pat.id"] == pat_id]
-@timed
+
 def get_df_all_pat():
     df = load_ckd_data_df()
     return df["pat.id"].unique().tolist()
-@timed
+
 def get_pat_demo(pat_id):
     df = load_ckd_crf_demo()
     return df[df["pat_id"] == pat_id]
-@timed
+
 def get_pat_unique_concept(pat_id):
     df = get_pat_records(pat_id).sort_values(by="age")
     concepts = df["concept.cd"].unique()
@@ -78,11 +67,11 @@ def get_pat_unique_concept(pat_id):
         age_val = list(map(lambda x, y: [x, y], ages, vals))
         res_list.append([c, age_val])
     return res_list
-@timed
+
 def get_pat_kidney_risk(pat_id):
     df = load_acr_df_pats()
     return df[df["pat_id"] == pat_id]
-@timed
+
 def get_profile_date(pat_id):
     ages = get_pat_records(pat_id)["age"]
     if len(ages) == 0:
@@ -100,15 +89,15 @@ def get_profile_date(pat_id):
     birth_day = (birth_day - datetime.timedelta(days=rand_days)).strftime("%Y-%m-%d")
 
     return [birth_day, last_visit_res]
-@timed    
+    
 def get_df_concept(att_name):
     df = load_ckd_data_df()
     return df[df['concept.cd'] == att_name]['nval.num']
-@timed
+
 def get_df_all_concept():
     df = load_ckd_data_df()
     return df['concept.cd'].unique().tolist()
-@timed    
+    
 def get_pat_age_concept_list(pat_id):
     """
     给定 pat_id，返回两个列表：
@@ -154,7 +143,7 @@ def range_list(a, b):
     
 # --- UMAP color helpers ---
 _umap_colors = None
-@timed
+
 def get_Umap_color(pat_id=None):
     """
     如果传了 pat_id，就返回该病人的 EGFR 或 age 数组；
@@ -187,7 +176,7 @@ def get_Umap_color(pat_id=None):
     return _umap_colors
 
 
-@timed
+
 def getLabTestNormalData(pat_id):
     ages, concepts = get_pat_age_concept_list(pat_id)
     concepts_ordered = getOrderofConcepts(pat_id)
@@ -220,13 +209,12 @@ def getLabTestNormalData(pat_id):
     return res
 
 _look_up_p = None
-@timed
 def load_lookup_p():
     global _look_up_p
     if _look_up_p is None:
         _look_up_p = pd.read_csv(DATA_DIR / "look_up_p.csv")
     return _look_up_p
-@timed
+
 def getIndicatorMarkers(pat_id):
     pat_df = load_features_all_csn()
     pat_df = pat_df[pat_df["pat_id"] == pat_id].sort_values("age")
@@ -259,7 +247,6 @@ def getIndicatorMarkers(pat_id):
     return res
 
 # ---------------- LabTest view ----------------
-@timed
 def getLabTestViewData(pat_id):
     ages, pat_concepts = get_pat_age_concept_list(pat_id)
     concepts = get_df_all_concept()
@@ -284,7 +271,6 @@ def getLabTestViewData(pat_id):
 
 
 # ---------------- Hierarchical clustering ----------------
-@timed
 def getHierarchicalClusterVec(pat_id):
     ages, concepts = get_pat_age_concept_list(pat_id)
     concept_age_val = get_pat_unique_concept(pat_id)
@@ -303,12 +289,12 @@ def getHierarchicalClusterVec(pat_id):
         concept_vec_dict[concept_pair[0]] = res
     return concept_vec_dict
 
-@timed
+
 def getHierarchicalClusterInput(pat_id):
     vect_dict = getHierarchicalClusterVec(pat_id)
     return list(vect_dict.values())
 
-@timed
+
 def getOrderofConcepts(pat_id):
     matrix = getHierarchicalClusterInput(pat_id)
     ages, concepts = get_pat_age_concept_list(pat_id)

@@ -69,8 +69,11 @@ def startup_preload():
     load_acr_df_pats()
     getTrajectoryPoints()
     get_neigh_graphsage()
+    
+    get_orginal_embed()
+    get_four_trajectory()
     log.info("Preload complete.")
-
+    
 startup_preload()
 # ??????
 @app.get("/__routes__")

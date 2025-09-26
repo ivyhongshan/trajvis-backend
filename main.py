@@ -53,6 +53,25 @@ api.add_resource(AnalysisDist, "/analysis/dist/<concept>")
 
 app.register_blueprint(api_bp)
 
+from services.get_df_data import (
+    load_ckd_data_df,
+    load_ckd_crf_demo,
+    load_features_all_csn,
+    load_acr_df_pats,
+)
+from services.get_analysis import getTrajectoryPoints, get_neigh_graphsage
+
+def startup_preload():
+    log.info("Preloading datasets and models...")
+    load_ckd_data_df()
+    load_ckd_crf_demo()
+    load_features_all_csn()
+    load_acr_df_pats()
+    getTrajectoryPoints()
+    get_neigh_graphsage()
+    log.info("Preload complete.")
+
+startup_preload()
 # ??????
 @app.get("/__routes__")
 def routes():

@@ -6,7 +6,8 @@ import logging
 sys.path.append("..")
 
 from services.get_umap import get_orginal_embed, get_four_trajectory, project_to_umap, get_pat_age_egfr
-from services.get_df_data import get_df_all_pat, get_pat_records
+from services.get_df_data import get_df_all_pat, get_pat_records,get_Umap_color
+
 
 class Umap(Resource):
     def get(self):

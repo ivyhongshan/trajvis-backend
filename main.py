@@ -1,43 +1,29 @@
 # main.py
-import logging
-logging.basicConfig(level=logging.INFO, force=True)
-log = logging.getLogger("startup")
-
+import logging, os, threading
 from flask import Flask, Blueprint
 from flask_restful import Api
 from flask_cors import CORS
 
-log.info("Start importing resources...")
+# logging.basicConfig(level=logging.INFO, force=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler("/tmp/flask.log"), logging.StreamHandler()]
+)
+log = logging.getLogger("startup")
 
-# ??? import ?????????????
-log.info("Importing resources.patient...")
 from resources.patient import Patient, AllPatient
-log.info("OK: resources.patient")
-
-log.info("Importing resources.indicator...")
 from resources.indicator import Indicator, AllIndicator
-log.info("OK: resources.indicator")
-
-log.info("Importing resources.umap...")
 from resources.umap import Umap, PatProj
-log.info("OK: resources.umap")
-
-log.info("Importing resources.labtest...")
 from resources.labtest import Labtest
-log.info("OK: resources.labtest")
-
-log.info("Importing resources.analysis...")
 from resources.analysis import Analysis, AnalysisDist
-log.info("OK: resources.analysis")
 
-log.info("All resources imported successfully.")
-
+# -------------------------------
+# Flask 初始化
+# -------------------------------
 app = Flask(__name__)
-
-# ????
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Blueprint + API
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 api = Api(api_bp)
 
@@ -50,41 +36,44 @@ api.add_resource(Labtest,      "/labtest/<int:id>")
 api.add_resource(PatProj,      "/umap/<int:id>")
 api.add_resource(Analysis,     "/analysis/<int:id>")
 api.add_resource(AnalysisDist, "/analysis/dist/<concept>")
-
 app.register_blueprint(api_bp)
 
-# from services.get_df_data import (
-#     load_ckd_data_df,
-#     load_ckd_crf_demo,
-#     load_features_all_csn,
-#     load_acr_df_pats,
-# )
-# from services.get_analysis import getTrajectoryPoints, get_neigh_graphsage
+# -------------------------------
+# 后台预热逻辑
+# -------------------------------
+def startup_preload():
+    from services.get_df_data import (
+        load_ckd_data_df, load_ckd_crf_demo,
+        load_features_all_csn, load_acr_df_pats
+    )
+    from services.get_analysis import getTrajectoryPoints, get_neigh_graphsage
 
-# def startup_preload():
-#     log.info("Preloading datasets and models...")
-#     load_ckd_data_df()
-#     load_ckd_crf_demo()
-#     load_features_all_csn()
-#     load_acr_df_pats()
-#     getTrajectoryPoints()
-#     get_neigh_graphsage()
-    
-#     # get_orginal_embed()
-#     # get_four_trajectory()
-#     log.info("Preload complete.")
+    log.info("Preloading datasets and models in background...")
+    try:
+        load_ckd_data_df()
+        load_ckd_crf_demo()
+        load_features_all_csn()
+        load_acr_df_pats()
+        getTrajectoryPoints()
+        get_neigh_graphsage()
+        log.info("Preload complete.")
+    except Exception as e:
+        log.error(f"Preload failed: {e}")
 
-# startup_preload()
-# ??????
+# 只在主进程里跑一次
+if os.getpid() == 1:
+    threading.Thread(target=startup_preload, daemon=True).start()
+
+# -------------------------------
+# Routes
+# -------------------------------
 @app.get("/__routes__")
 def routes():
     return {"routes": sorted([str(r) for r in app.url_map.iter_rules()])}
 
-# ????
 @app.get("/health")
 def health():
     return "ok", 200
 
 if __name__ == "__main__":
-    # ??????Cloud Run ? gunicorn ??
     app.run(host="0.0.0.0", port=8080, debug=False)

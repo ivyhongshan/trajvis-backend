@@ -61,8 +61,8 @@ def startup_preload():
         log.error(f"Preload failed: {e}")
 
 # 只在主进程里跑一次
-if os.getpid() == 1:
-    threading.Thread(target=startup_preload, daemon=True).start()
+# if os.getpid() == 1:
+threading.Thread(target=startup_preload, daemon=True).start()
 
 # -------------------------------
 # Routes

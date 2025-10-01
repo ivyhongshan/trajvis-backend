@@ -45,14 +45,27 @@ def _ensure_artifacts():
 
 @lru_cache(maxsize=1)
 def _state():
+    t0 = time.time()
     _ensure_artifacts()
-    logging.info("Loading artifacts...")
+    logging.info("Loading artifacts in get_umap...")
+
     st = {}
     st["trans"] = load(ARTIFACT_DIR / "umap_model.joblib")
+    logging.info(f"umap_model.joblib loaded in {time.time()-t0:.2f}s")
+
     st["embedding"] = np.load(ARTIFACT_DIR / "embedding.npy")
+    logging.info(f"embedding.npy loaded in {time.time()-t0:.2f}s")
+
     st["embeddings_all_id_df"] = pd.read_csv(DATA_DIR / "embeddings_all_id_cluster.csv")
-    st["features_all_csn_df"]  = pd.read_csv(DATA_DIR / "features_all_csn_id.csv")
+    logging.info(f"embeddings_all_id_cluster.csv loaded in {time.time()-t0:.2f}s")
+
+    st["features_all_csn_df"] = pd.read_csv(DATA_DIR / "features_all_csn_id.csv")
+    logging.info(f"features_all_csn_id.csv loaded in {time.time()-t0:.2f}s")
+
+    total = time.time()-t0
+    logging.info(f"get_umap._state total load time {total:.2f}s")
     return st
+
 
 def warm():
     _ = _state(); return True

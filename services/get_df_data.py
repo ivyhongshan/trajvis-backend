@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from pathlib import Path
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
+import time, logging
 
 #DATA_DIR = Path("/app/data")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
@@ -20,28 +21,37 @@ _acr_df_pats = None
 
 def load_ckd_data_df():
     global _ckd_data_df
+    t0 = time.time()
     if _ckd_data_df is None:
         print("Loading ckd_emr_data.csv ...")   # debug log
-        print("DEBUG: entering load_ckd_data_df", flush=True)
+        # print("DEBUG: entering load_ckd_data_df", flush=True)
         _ckd_data_df = pd.read_csv(DATA_DIR / "ckd_emr_data.csv", skipinitialspace=True)
+    logging.info(f"load_ckd_data_df took {time.time()-t0:.2f}s")    
     return _ckd_data_df
 
 def load_ckd_crf_demo():
     global _ckd_crf_demo
+    t0 = time.time()
     if _ckd_crf_demo is None:
         _ckd_crf_demo = pd.read_csv(DATA_DIR / "ckd_crf_demo.csv")
+    logging.info(f"load_ckd_crf_demo took {time.time()-t0:.2f}s")
     return _ckd_crf_demo
 
 def load_features_all_csn():
     global _features_all_csn
+    t0 = time.time()
     if _features_all_csn is None:
         _features_all_csn = pd.read_csv(DATA_DIR / "features_all_csn_id.csv", skipinitialspace=True)
+    logging.info(f"load_features_all_csn took {time.time()-t0:.2f}s")    
     return _features_all_csn
 
 def load_acr_df_pats():
     global _acr_df_pats
+    t0 = time.time()
     if _acr_df_pats is None:
         _acr_df_pats = pd.read_csv(DATA_DIR / "cal_risk.csv")
+    logging.info(f"load_acr_df_pats took {time.time()-t0:.2f}s")    
+
     return _acr_df_pats
 
 # ---------------- ???? ----------------

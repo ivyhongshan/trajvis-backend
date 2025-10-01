@@ -47,7 +47,7 @@ def startup_preload():
             load_features_all_csn, load_acr_df_pats
         )
         from services.get_analysis import getTrajectoryPoints, get_neigh_graphsage
-        from services.get_umap import get_orginal_embed, get_four_trajectory
+        from services.get_umap import get_orginal_embed, get_four_trajectory,warm
 
         log.info("Preloading datasets and models...")
         load_ckd_data_df()
@@ -56,6 +56,7 @@ def startup_preload():
         load_acr_df_pats()
         getTrajectoryPoints()
         get_neigh_graphsage()
+        warm()
         log.info("Datasets + Analysis preload complete.")
 
         log.info("Preloading UMAP embeddings...")
@@ -73,6 +74,25 @@ if os.getpid() == 1:
 # -------------------------------
 # Routes
 # -------------------------------
+
+# main.py (加在 routes 那里)
+
+from services import get_umap
+
+@app.get("/warmup")
+def warmup():
+    try:
+        get_umap.warm()
+        return {"status": "warmed"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}, 500
+try:
+    get_umap.warm()
+    log.info("UMAP artifacts preloaded at startup")
+except Exception as e:
+    log.error(f"Preload failed: {e}")
+
+    
 @app.get("/__routes__")
 def routes():
     return {"routes": sorted([str(r) for r in app.url_map.iter_rules()])}

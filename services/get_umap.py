@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from joblib import dump, load
 import umap
+import time, logging
 
 # Data ??????? & Cloud Run?
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))

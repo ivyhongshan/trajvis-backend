@@ -7,6 +7,7 @@ import pandas as pd
 from pathlib import Path
 from scipy import interpolate
 from sklearn.neighbors import KNeighborsClassifier
+import time, logging
 
 # ----------------
 # 路径与全局缓存（lazy load）
@@ -26,61 +27,82 @@ _neigh_graphsage = None
 # ------------- Lazy loaders -------------
 def get_ckd_data():
     global _ckd_data_df
+    t0 = time.time()
     if _ckd_data_df is None:
+        logging.info("Start loading ckd_emr_data.csv")
         _ckd_data_df = pd.read_csv(DATA_DIR / "ckd_emr_data.csv", delimiter=",", skipinitialspace=True)
+    logging.info(f"ckd_emr_data.csv loaded in {time.time()-t0:.2f}s")
     return _ckd_data_df
 
 def get_ckd_crf_demo():
     global _ckd_crf_demo
+    t0 = time.time()
     if _ckd_crf_demo is None:
+        logging.info("Start loading _ckd_crf_demo")
         _ckd_crf_demo = pd.read_csv(DATA_DIR / "ckd_crf_demo.csv", delimiter=",")
+    logging.info(f"ckd_crf_demo loaded in {time.time()-t0:.2f}s")
     return _ckd_crf_demo
 
 def get_pat_traj():
     global _pat_traj
+    t0 = time.time()
     if _pat_traj is None:
+        logging.info("Start loading get_pat_traj")
         _pat_traj = pd.read_csv(DATA_DIR / "pat_traj.csv", delimiter=",")
+    logging.info(f"pat_traj loaded in {time.time()-t0:.2f}s")
     return _pat_traj
 
 def get_features_all_csn():
     global _features_all_csn
+    t0 = time.time()
     if _features_all_csn is None:
+        logging.info("Start loading get_features_all_csn")
         _features_all_csn = pd.read_csv(DATA_DIR / "features_all_csn_id.csv", delimiter=",")
+    logging.info(f"features_all_csn_id loaded in {time.time()-t0:.2f}s")
     return _features_all_csn
 
 def get_embeddings_all_id():
     global _embeddings_all_id
+    t0 = time.time()
     if _embeddings_all_id is None:
+        logging.info("Start loading get_embeddings_all_id")
         _embeddings_all_id = pd.read_csv(DATA_DIR / "embeddings_all_id_cluster.csv", delimiter=",")
+    logging.info(f"get_embeddings_all_id loaded in {time.time()-t0:.2f}s")
     return _embeddings_all_id
 
 def get_ordered_feats():
     global _ordered_feats
+    t0 = time.time()
     if _ordered_feats is None:
+        logging.info("Start loading get_ordered_feats")
         _ordered_feats = pd.read_csv(DATA_DIR / "ordered_feats.csv", delimiter=",")
+    logging.info(f"ordered_feats loaded in {time.time()-t0:.2f}s")
     return _ordered_feats
 
 def get_outputval_try():
     global _outputval_try
     if _outputval_try is None:
+        t0 = time.time()
+        logging.info("Start loading graphsage_output.npy")
         arr = np.load(DATA_DIR / "graphsage_output.npy")
         _outputval_try = pd.DataFrame(arr)
+        logging.info(f"graphsage_output.npy loaded in {time.time()-t0:.2f}s")
     return _outputval_try
 
 def get_neigh_graphsage():
-    """
-    优先从 artifacts 目录加载已经训练好的 KNN（neigh_graphsage.joblib）。
-    若不存在，则按原始逻辑用 graphsage_output.npy + ordered_feats 重新 fit 一份 KNN。
-    """
     global _neigh_graphsage
     if _neigh_graphsage is None:
+        t0 = time.time()
         model_path = ARTIFACT_DIR / "neigh_graphsage.joblib"
         if model_path.exists():
+            logging.info("Loading neigh_graphsage.joblib")
             _neigh_graphsage = joblib.load(model_path)
         else:
+            logging.info("Fitting KNN for neigh_graphsage")
             neigh = KNeighborsClassifier(n_neighbors=5)
             neigh.fit(get_outputval_try(), np.ravel(get_ordered_feats()["cluster_label"].values))
             _neigh_graphsage = neigh
+        logging.info(f"neigh_graphsage ready in {time.time()-t0:.2f}s")
     return _neigh_graphsage
 
 # ----------------

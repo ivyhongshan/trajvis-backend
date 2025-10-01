@@ -1,24 +1,20 @@
 #!/bin/bash
 set -e
 
-echo ">>> Starting Flask app..."
-python3 main.py > /tmp/flask.log 2>&1 &
-PID=$!
+PORT=8081
+IMAGE="us-central1-docker.pkg.dev/in-iusm-bhds-depot/cloud-run-source-deploy/trajvis-backend/hliu-trajvis-backend:085ebb2c2f61099e784342b262e4035a5ab29b42"
 
-# 等待 Flask 启动
-sleep 15
+echo ">>> Running container on port $PORT..."
+docker run --rm -d -p $PORT:8080 --name test-preload-umap $IMAGE
 
-# 打印健康检查
-echo ">>> Checking health..."
-curl -s http://127.0.0.1:8080/health || echo "health failed"
+echo ">>> Wait 20s for preload thread to run..."
+sleep 20
 
-# 打印 routes
-echo -e "\n>>> Checking routes..."
-curl -s http://127.0.0.1:8080/__routes__ || echo "routes failed"
+echo ">>> Testing first /api/umap request"
+curl -w "\nTime total: %{time_total}s\n" -o /dev/null -s "http://localhost:$PORT/api/umap"
 
-# 查看日志
-echo -e "\n>>> Tail logs (press Ctrl+C to stop)..."
-tail -f /tmp/flask.log
+echo ">>> Testing second /api/umap request"
+curl -w "\nTime total: %{time_total}s\n" -o /dev/null -s "http://localhost:$PORT/api/umap"
 
-# 保持 Flask 进程
-wait $PID
+echo ">>> Stopping container..."
+docker stop test-preload-umap

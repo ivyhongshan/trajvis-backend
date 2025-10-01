@@ -1,4 +1,5 @@
 runtime: python39
 instance_class: F2
-entrypoint: gunicorn -b :$PORT --timeout 600 main:app
+# entrypoint: gunicorn -b :$PORT --timeout 600 main:app
+entrypoint: gunicorn -b :$PORT --timeout 600 --log-level debug main:app
 

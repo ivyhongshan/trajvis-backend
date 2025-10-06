@@ -63,6 +63,16 @@ def get_df_all_pat():
     df = load_ckd_data_df()
     return df["pat.id"].unique().tolist()
 
+def get_df_all_pat_from_risk():
+    """仅从 cal_risk.csv 获取病人 ID 列表"""
+    df = load_acr_df_pats()
+    if "pat_id" in df.columns:
+        return df["pat_id"].unique().tolist()
+    elif "patid" in df.columns:
+        return df["patid"].unique().tolist()
+    else:
+        return []
+
 def get_pat_demo(pat_id):
     df = load_ckd_crf_demo()
     return df[df["pat_id"] == pat_id]

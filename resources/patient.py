@@ -6,7 +6,6 @@ from flask import jsonify
 
 sys.path.append("..")
 from services.get_df_data import get_pat_records, get_df_all_pat, get_pat_demo, get_pat_unique_concept, get_pat_kidney_risk, get_profile_date
-DATA_DIR = Path(os.environ.get("DATA_DIR", "/app/data"))
 
 class Patient(Resource):
     def get(self, id):

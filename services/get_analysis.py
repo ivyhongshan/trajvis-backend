@@ -208,33 +208,24 @@ def get_pat_race_distribution():
     return res
 
 def get_concept_distribution(concept):
-    """
-    Compute population-level distributions for eGFR or age
-    using wf_acr_capped.csv rather than ckd_emr_data.csv.
-    """
-    import numpy as np
-
-    wf_path = DATA_DIR / "wf_acr_capped.csv"
-    if not wf_path.exists():
-        return {"x_vals": [], "y_vals": []}
-
-    df = pd.read_csv(wf_path)
-    if concept.upper() == "EGFR":
-        values = df["egfr"].dropna().astype(float)
-        bins = np.linspace(0, 150, 30)
-    elif concept.lower() == "age":
-        values = df["age"].dropna().astype(float)
-        bins = np.linspace(0, 110, 30)
-    else:
-        return {"x_vals": [], "y_vals": []}
-
-    counts, bin_edges = np.histogram(values, bins=bins)
-    # 返回兼容前端 parseConceptDist()
-    return {
-        "bins": list(bin_edges[:-1].round(2)),
-        "counts": list(counts.astype(int))
-    }
-
+    x_value, y_value = [], []
+    pat_traj = get_pat_traj()
+    ckd_data_df = get_ckd_data()
+    for traj in ['orange', 'blue', 'green']:
+        pats = pat_traj[pat_traj['traj'] == traj].pat_id
+        records = ckd_data_df[ckd_data_df['pat.id'].isin(pats)]
+        target = records[records['concept.cd'] == concept]
+        x_s, res = [], []
+        i = 30
+        while i < 90:
+            x_s.append(i)
+            value = target[(target['age'] > i) & (target['age'] < i + 5)]['nval.num'].mean()
+            value = round(value, 2) if not pd.isna(value) else 0
+            res.append(value)
+            i += 5
+        y_value.append([traj, res])
+        x_value = x_s
+    return x_value, y_value
 
 # ----------------
 # 曲线带宽辅助（与原始一致）

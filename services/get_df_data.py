@@ -78,9 +78,42 @@ def get_pat_unique_concept(pat_id):
         res_list.append([c, age_val])
     return res_list
 
+# def get_pat_kidney_risk(pat_id):
+#     df = load_acr_df_pats()
+#     return df[df["pat_id"] == pat_id]
+
 def get_pat_kidney_risk(pat_id):
     df = load_acr_df_pats()
-    return df[df["pat_id"] == pat_id]
+    row = df[df["pat_id"] == pat_id]
+
+    if len(row) > 0:
+        risk_2, risk_5 = float(row["risk_2yr"].iloc[0]), float(row["risk_5yr"].iloc[0])
+        if (risk_2 > 0) and (risk_5 > 0):
+            return row
+    # 如果不存在或为0，则从患者demo或lab计算
+    demo = get_pat_demo(pat_id)
+    records = get_pat_records(pat_id)
+
+    if demo.empty or records.empty:
+        return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": 0, "risk_5yr": 0}])
+
+    sex = demo["sex_cd"].iloc[0] if "sex_cd" in demo.columns else "M"
+    age = demo["age"].iloc[0] if "age" in demo.columns else records["age"].max()
+
+    # 获取最近一次 EGFR 和 ACR
+    egfr = records[records["concept.cd"] == "EGFR"]["nval.num"].mean()
+    acr = records[records["concept.cd"] == "ACR"]["nval.num"].mean()
+
+    if pd.isna(egfr) or pd.isna(acr):
+        return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": 0, "risk_5yr": 0}])
+
+    risk_2, risk_5 = calc_kidney_failure_risk(age, sex, egfr, acr)
+
+    # 更新缓存 CSV（懒保存）
+    df.loc[len(df)] = {"pat_id": pat_id, "risk_2yr": risk_2, "risk_5yr": risk_5}
+    df.to_csv(DATA_DIR / "cal_risk.csv", index=False)
+
+    return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": risk_2, "risk_5yr": risk_5}])
 
 def get_profile_date(pat_id):
     ages = get_pat_records(pat_id)["age"]
@@ -337,3 +370,30 @@ def label_category(label):
     if label in after_orange_after_green_blue:
         return "after_orange_after_green_blue"
     return None
+
+import math
+
+def calc_kidney_failure_risk(age, sex, egfr, acr):
+    """
+    Compute 2-year and 5-year kidney failure risk using Tangri Model 3 (North America calibration)
+    age: 年龄 (years)
+    sex: 'M' 或 'F'
+    egfr: mL/min/1.73m2
+    acr: mg/g (albumin-to-creatinine ratio)
+    """
+
+    # 对应 4-variable KFRE 北美校准模型参数
+    lp = (
+        -0.2201 * ((age / 10) - 7.036)
+        + 0.2467 * ((1 if sex == "M" else 0) - 0.5642)
+        - 0.5567 * ((egfr / 5) - 7.222)
+        + 0.4510 * ((math.log(acr + 1e-6)) - 5.137)
+    )
+
+    # 北美基线生存
+    s0_2 = 0.9751
+    s0_5 = 0.8996
+
+    risk_2yr = 1 - s0_2 ** (math.exp(lp))
+    risk_5yr = 1 - s0_5 ** (math.exp(lp))
+    return risk_2yr, risk_5yr

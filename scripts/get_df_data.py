@@ -3,11 +3,11 @@ import numpy as np
 import datetime
 import random
 from dateutil.relativedelta import relativedelta
-ckd_data_df= pd.read_csv('data/ckd_emr_data.csv',skipinitialspace = True, delimiter="," )
-ckd_crf_demo = pd.read_csv('data/ckd_crf_demo.csv', delimiter=",")
-ordered_feats = pd.read_csv('data/ordered_feats.csv', delimiter=",")
-features_all_csn = pd.read_csv('data/features_all_csn_id.csv',delimiter=",", skipinitialspace = True)
-acr_df_pats = pd.read_csv('data/cal_risk.csv', delimiter=",")
+ckd_data_df= pd.read_csv('../data/ckd_emr_data.csv',skipinitialspace = True, delimiter="," )
+ckd_crf_demo = pd.read_csv('../data/ckd_crf_demo.csv', delimiter=",")
+ordered_feats = pd.read_csv('../data/ordered_feats.csv', delimiter=",")
+features_all_csn = pd.read_csv('../data/features_all_csn_id.csv',delimiter=",", skipinitialspace = True)
+acr_df_pats = pd.read_csv('../data/cal_risk.csv', delimiter=",")
 
 def get_pat_kidney_risk(id):
     return acr_df_pats[acr_df_pats['pat_id']==id]
@@ -94,7 +94,7 @@ def getLabTestViewData(pat_id):
             res.append([age_ind, concept_ind, age_num_val_dict[key][0], age_num_val_dict[key][1]])
     return res
 
-look_up_p = pd.read_csv('data/look_up_p.csv')
+look_up_p = pd.read_csv('../data/look_up_p.csv')
 def getIndicatorMarkers(pat_id):
     pat_df = features_all_csn[features_all_csn['pat_id']==pat_id].sort_values('age')
     ages, pat_concepts = get_pat_age_concept_list(pat_id)
@@ -274,7 +274,89 @@ def getOrderofConcepts(pat_id):
     return res
 
 
+
 class new_key:
       def __init__(self, name, label):
         self.label = label
         self.name = name
+
+# ==========================================================
+# KFRE 4-variable (Model 3, North America) risk precomputation
+# Input : data/wf_acr_capped.csv + data/ckd_crf_demo.csv
+# Output: data/cal_risk.csv
+# ==========================================================
+import math
+import pandas as pd
+from pathlib import Path
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
+def _normalize_sex(s):
+    """将性别统一成 M/F"""
+    if isinstance(s, str):
+        s = s.strip().upper()
+        if s in ["M", "MALE", "1"]:
+            return "M"
+        if s in ["F", "FEMALE", "0"]:
+            return "F"
+    return "M"  # 默认 M
+
+def _calc_kfre_model3(age, sex, egfr, acr):
+    """Tangri KFRE 4-variable model (North America calibrated)"""
+    lp = (
+        -0.2201 * ((age / 10) - 7.036)
+        + 0.2467 * ((1 if sex == "M" else 0) - 0.5642)
+        - 0.5567 * ((egfr / 5) - 7.222)
+        + 0.4510 * ((math.log(max(acr, 1e-6))) - 5.137)
+    )
+    r2 = 1 - (0.9751 ** math.exp(lp))
+    r5 = 1 - (0.8996 ** math.exp(lp))
+    return r2, r5
+
+def compute_cal_risk():
+    print("Loading data...")
+    df_lab = pd.read_csv(DATA_DIR / "wf_acr_capped.csv", skipinitialspace=True)
+    df_demo = pd.read_csv(DATA_DIR / "ckd_crf_demo.csv")
+
+    results = []
+    # 确保列名匹配
+    required_cols = {"pat_id", "egfr", "age", "ACR"}
+    if not required_cols.issubset(df_lab.columns):
+        raise ValueError(f"wf_acr_capped.csv 缺少必要列: {required_cols - set(df_lab.columns)}")
+
+    # 逐个病人计算
+    for pid in sorted(df_lab["pat_id"].unique()):
+        sub = df_lab[df_lab["pat_id"] == pid]
+        # 取平均值以代表该病人整体水平
+        egfr = sub["egfr"].mean()
+        age = sub["age"].mean()
+        acr = sub["ACR"].mean()
+
+        # 找 sex
+        if "sex_cd" in df_demo.columns:
+            m = df_demo[df_demo["pat_id"] == pid]
+            sex = _normalize_sex(m["sex_cd"].iloc[0]) if len(m) > 0 else "M"
+        else:
+            sex = "M"
+
+        if pd.isna(egfr) or pd.isna(acr) or acr <= 0:
+            r2 = r5 = 0.0
+        else:
+            r2, r5 = _calc_kfre_model3(age, sex, egfr, acr)
+
+        results.append({
+            "pat_id": int(pid),
+            "sex": sex,
+            "egfr": round(egfr, 2),
+            "age": round(age, 1),
+            "ACR": round(acr, 2),
+            "twoyear": round(r2 * 100, 2),
+            "fiveyear": round(r5 * 100, 2)
+        })
+
+    out = pd.DataFrame(results)
+    out.to_csv(DATA_DIR / "cal_risk.csv", index=False)
+    print(f"Saved {len(out)} patients → {DATA_DIR / 'cal_risk.csv'}")
+
+if __name__ == "__main__":
+    compute_cal_risk()

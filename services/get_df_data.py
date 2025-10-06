@@ -87,7 +87,7 @@ def get_pat_kidney_risk(pat_id):
     row = df[df["pat_id"] == pat_id]
 
     if len(row) > 0:
-        risk_2, risk_5 = float(row["risk_2yr"].iloc[0]), float(row["risk_5yr"].iloc[0])
+        risk_2, risk_5 = float(row["twoyear"].iloc[0]), float(row["fiveyear"].iloc[0])
         if (risk_2 > 0) and (risk_5 > 0):
             return row
     # 如果不存在或为0，则从患者demo或lab计算
@@ -95,7 +95,7 @@ def get_pat_kidney_risk(pat_id):
     records = get_pat_records(pat_id)
 
     if demo.empty or records.empty:
-        return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": 0, "risk_5yr": 0}])
+        return pd.DataFrame([{"pat_id": pat_id, "twoyear": 0, "fiveyear": 0}])
 
     sex = demo["sex_cd"].iloc[0] if "sex_cd" in demo.columns else "M"
     age = demo["age"].iloc[0] if "age" in demo.columns else records["age"].max()
@@ -105,15 +105,15 @@ def get_pat_kidney_risk(pat_id):
     acr = records[records["concept.cd"] == "ACR"]["nval.num"].mean()
 
     if pd.isna(egfr) or pd.isna(acr):
-        return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": 0, "risk_5yr": 0}])
+        return pd.DataFrame([{"pat_id": pat_id, "twoyear": 0, "fiveyear": 0}])
 
     risk_2, risk_5 = calc_kidney_failure_risk(age, sex, egfr, acr)
 
     # 更新缓存 CSV（懒保存）
-    df.loc[len(df)] = {"pat_id": pat_id, "risk_2yr": risk_2, "risk_5yr": risk_5}
+    df.loc[len(df)] = {"pat_id": pat_id, "twoyear": risk_2, "fiveyear": risk_5}
     df.to_csv(DATA_DIR / "cal_risk.csv", index=False)
 
-    return pd.DataFrame([{"pat_id": pat_id, "risk_2yr": risk_2, "risk_5yr": risk_5}])
+    return pd.DataFrame([{"pat_id": pat_id, "twoyear": risk_2, "fiveyear": risk_5}])
 
 def get_profile_date(pat_id):
     ages = get_pat_records(pat_id)["age"]

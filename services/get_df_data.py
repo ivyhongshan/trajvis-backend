@@ -64,7 +64,6 @@ def get_df_all_pat():
     return df["pat.id"].unique().tolist()
 
 def get_df_all_pat_from_risk():
-    """仅从 cal_risk.csv 获取病人 ID 列表"""
     df = load_acr_df_pats()
     if "pat_id" in df.columns:
         return df["pat_id"].unique().tolist()

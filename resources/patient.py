@@ -5,7 +5,7 @@ import json
 from flask import jsonify
 
 sys.path.append("..")
-from services.get_df_data import get_pat_records, get_df_all_pat, get_pat_demo, get_pat_unique_concept, get_pat_kidney_risk, get_profile_date
+from services.get_df_data import get_pat_records, get_df_all_pat_from_risk,get_df_all_pat, get_pat_demo, get_pat_unique_concept, get_pat_kidney_risk, get_profile_date
 
 class Patient(Resource):
     def get(self, id):
